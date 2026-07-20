@@ -222,7 +222,7 @@ async function runDoctorBestEffort() {
   lastDoctorAt = now;
 
   try {
-    const r = await runCmd(OPENCLAW_NODE, clawArgs(["doctor"]));
+          const doctorArgs = ["doctor"];      if (arg.trim() === "--fix --non-interactive") {
     const out = redactSecrets(r.output || "");
     lastDoctorOutput = out.length > 50_000 ? out.slice(0, 50_000) + "\n... (truncated)\n" : out;
   } catch (err) {
@@ -805,7 +805,7 @@ app.post("/setup/api/run", requireSetupAuth, async (req, res) => {
           dmPolicy: "pairing",
           botToken: token,
           groupPolicy: "allowlist",
-          streamMode: "partial",
+          streaming: { mode: "partial" },
         };
         const set = await runCmd(
           OPENCLAW_NODE,
@@ -1029,7 +1029,13 @@ app.post("/setup/api/console/run", requireSetupAuth, async (req, res) => {
       return res.status(r.code === 0 ? 200 : 500).json({ ok: r.code === 0, output: redactSecrets(r.output) });
     }
     if (cmd === "openclaw.doctor") {
-      const r = await runCmd(OPENCLAW_NODE, clawArgs(["doctor"]));
+    const doctorArgs = ["doctor"];
+      if (arg.trim() === "--fix --non-interactive") {
+        doctorArgs.push("--fix", "--non-interactive");
+      } else if (arg.trim()) {
+        return res.status(400).json({ ok: false, error: "Unsupported doctor arguments" });
+      }
+        const r = await runCmd(OPENCLAW_NODE, clawArgs(doctorArgs));
       return res.status(r.code === 0 ? 200 : 500).json({ ok: r.code === 0, output: redactSecrets(r.output) });
     }
     if (cmd === "openclaw.logs.tail") {
